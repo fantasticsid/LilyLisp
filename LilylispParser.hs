@@ -10,6 +10,9 @@ import Text.Parsec.Combinator
 symbol :: Parser Char
 symbol = oneOf "!#$%&|*+-/:<=>?@^_~"
 
+whitespaces :: Parser String
+whitespaces = many (space <|> newline)
+
 parseString :: Parser LispVal
 parseString = do char '"'
                  x <- many (noneOf "\"")
@@ -60,15 +63,14 @@ formExpr (x:xs) = ListExpr x xs
 
 parseForm :: Parser LispExpr
 parseForm = do char '('
+               whitespaces
                elems <- sepBy1 (parseForm <|> parseAtom) (many1 space)
+               whitespaces
                char ')'
                return $ formExpr elems
 
 parseExpr :: Parser LispExpr
 parseExpr = parseAtom <|> parseForm
-
-whitespaces :: Parser String
-whitespaces = many (space <|> newline)
 
 parseProg :: Parser [LispExpr]
 parseProg = do whitespaces

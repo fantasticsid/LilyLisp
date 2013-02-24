@@ -53,10 +53,44 @@ primitiveMul :: [LispVal] -> LispVal
 primitiveMul [] = Int 1
 primitiveMul (x:xs) = primitiveMul2 x (primitiveMul xs)
 
+primitiveDiv2 :: LispVal -> LispVal -> LispVal
+primitiveDiv2 (Int a) (Int b) = Int $ quot a b
+primitiveDiv2 (Int a) (Float b) = Float $ (fromIntegral a) / b
+primitiveDiv2 (Float a) (Int b) = Float $ a / (fromIntegral b)
+primitiveDiv2 (Float a) (Float b) = Float (a / b)
+
+primitiveDiv :: [LispVal] -> LispVal
+primitiveDiv [] = Int 1
+primitiveDiv (x:xs) = primitiveDiv2 x (primitiveDiv xs)
+
+primitiveAdd2 :: LispVal -> LispVal -> LispVal
+primitiveAdd2 (Int a) (Int b) = Int (a + b)
+primitiveAdd2 (Int a) (Float b) = Float $ (fromIntegral a) + b
+primitiveAdd2 (Float a) (Int b) = Float $ a + (fromIntegral b)
+primitiveAdd2 (Float a) (Float b) = Float $ (a + b)
+
+primitiveAdd :: [LispVal] -> LispVal
+primitiveAdd [] = Int 0
+primitiveAdd (x:xs) = primitiveAdd2 x (primitiveAdd xs)
+
+primitiveMin2 :: LispVal -> LispVal -> LispVal
+primitiveMin2 (Int a) (Int b) = Int (a - b)
+primitiveMin2 (Int a) (Float b) = Float $ (fromIntegral a) - b
+primitiveMin2 (Float a) (Int b) = Float $ a - (fromIntegral b)
+primitiveMin2 (Float a) (Float b) = Float $ (a - b)
+
+primitiveMin :: [LispVal] -> LispVal
+primitiveMin [] = Int 0
+primitiveMin [x] = primitiveMin2 (Int 0) x
+primitiveMin (x:xs) = primitiveMin2 x (primitiveAdd xs)
+
 -- eval
 
 lookupProc :: LispVal -> LispVal
 lookupProc (Symbol "*") = Primitive "*" primitiveMul
+lookupProc (Symbol "/") = Primitive "/" primitiveDiv
+lookupProc (Symbol "+") = Primitive "+" primitiveAdd
+lookupProc (Symbol "-") = Primitive "-" primitiveMin
 
 eval :: LispExpr -> LispVal
 eval (Value val) = val
