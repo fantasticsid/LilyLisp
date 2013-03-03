@@ -1,6 +1,8 @@
 module LilylispCore where
 
-import Data.Map (Map)
+import qualified Data.Map as Map (Map, fromList, lookup)
+import Data.Maybe
+import Data.IORef
 
 -- value and expressions
 
@@ -15,15 +17,15 @@ data LispVal = String String
              | Lambda String [String] [LispExpr] LispEnv -- procName params bodys environment
              | Primitive String ([LispVal] -> LispVal)
 
-data LispEnv = LispEnv (Map String LispVal)
-               deriving (Show)
+data LispEnv = LispEnv (IORef (Map.Map String LispVal)) LispEnv
+             | TopEnv
 
 data LispExpr = Value LispVal
               | If LispExpr LispExpr LispExpr
               | Define LispVal LispExpr
               | Assignment String LispExpr
               | Sequence [LispExpr]
-              | ListExpr LispExpr [LispExpr]
+              | ListExpr [LispExpr]
               deriving (Show)
 
 showVal :: LispVal -> String
@@ -86,15 +88,29 @@ primitiveMin (x:xs) = primitiveMin2 x (primitiveAdd xs)
 
 -- eval
 
-lookupProc :: LispVal -> LispVal
-lookupProc (Symbol "*") = Primitive "*" primitiveMul
-lookupProc (Symbol "/") = Primitive "/" primitiveDiv
-lookupProc (Symbol "+") = Primitive "+" primitiveAdd
-lookupProc (Symbol "-") = Primitive "-" primitiveMin
+initialEnv :: Map.Map String LispVal
+initialEnv = Map.fromList [("*", Primitive "*" primitiveMul),
+                       ("/", Primitive "/" primitiveDiv),
+                       ("+", Primitive "+" primitiveAdd),
+                       ("-", Primitive "-" primitiveMin)]
 
-eval :: LispExpr -> LispVal
-eval (Value val) = val
-eval (ListExpr proc params) = apply (lookupProc (eval proc)) (map eval params)
+lookupProc :: LispVal -> LispEnv -> IO LispVal
+lookupProc proc@(Symbol procName) (LispEnv mapref parentEnv) = do m <- readIORef mapref
+                                                                  case Map.lookup procName m of
+                                                                    Nothing -> lookupProc proc parentEnv
+                                                                    Just p -> return p
+lookupProc (Symbol procName) TopEnv = error $ "Procedure " ++ procName ++ " not found"
+lookupProc proc env = return proc -- procedure value
+
+eval :: LispExpr -> LispEnv -> IO LispVal
+eval (Value val) env = return val
+eval (ListExpr (procExpr:params)) env = do procKey <- eval procExpr env
+                                           proc <- lookupProc procKey env
+                                           params <- mapM (\param -> eval param env) params
+                                           return $ apply proc params
+
+
+-- apply (lookupProc (eval proc)) (map eval params)
 
 apply :: LispVal -> [LispVal] -> LispVal
 apply (Primitive _ fn) params = fn params
