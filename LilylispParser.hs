@@ -56,8 +56,6 @@ parseAtom = do atom <- try parseString <|>
                return $ Value atom
 
 formExpr :: [LispExpr] -> LispExpr
-formExpr ((Value (Symbol "if")):xs) = If (xs !! 0) (xs !! 1) (xs !! 2)
-formExpr ((Value (Symbol "define")):(Value procName@(Symbol _)):xs) = Define procName (xs !! 0)
 formExpr ((Value (Symbol "set!")):(Value (Symbol varName)):xs) = Assignment varName (xs !! 0)
 formExpr xs = ListExpr xs
 
