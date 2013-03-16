@@ -2,6 +2,7 @@ import LilylispParser
 import LilylispCore
 
 import Control.Monad
+import Data.List
 
 import Data.IORef
 import System.IO
@@ -16,4 +17,4 @@ main = do m <- newIORef initialEnv
             case parseResult of
               Left error -> print error
               Right exprs -> do result <- mapM (\expr -> eval expr rootEnv) exprs
-                                print result
+                                putStrLn $ concat . intersperse ", " $ map show result
