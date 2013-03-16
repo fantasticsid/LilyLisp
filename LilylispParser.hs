@@ -62,7 +62,7 @@ formExpr xs = ListExpr xs
 parseForm :: Parser LispExpr
 parseForm = do char '('
                whitespaces
-               elems <- sepBy1 (parseForm <|> parseAtom) (many1 space)
+               elems <- endBy1 (parseForm <|> parseAtom) (try $ many space)
                whitespaces
                char ')'
                return $ formExpr elems
